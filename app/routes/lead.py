@@ -10,6 +10,8 @@ router = APIRouter()
 @router.get("/get-bearer-token")
 def get_bearer_token():
     token_data = get_salesforce_token()
+    print("Token data:", token_data)  # 디버깅용 로그
+    # 필요한 경우 토큰 데이터에서 특정 필드만 반환   
     return {
         "access_token": token_data.get("access_token"),
         "instance_url": token_data.get("instance_url"),
@@ -29,10 +31,13 @@ def post_lead(data: LeadIn):
 @router.post("/sf-lead-proxy")
 async def sf_lead_proxy(request: Request):
     body = await request.json()
+    print("Received body:", body)
     # body에서 필요한 필드 추출 (Salesforce에서 오는 데이터 포맷에 맞게 수정 필요)
     first_name = body.get("first_name") or body.get("FirstName")
     last_name = body.get("last_name") or body.get("LastName")
     company = body.get("company") or body.get("Company", "Unknown Company")
     lead_in = LeadIn(first_name=first_name, last_name=last_name, company=company)
     result = create_lead(lead_in)
+    print("Created lead:", result)
+    
     return {"status": "created", "result": result}
