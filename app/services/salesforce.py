@@ -36,7 +36,7 @@ def get_salesforce_token():
 def get_leads():
     token_data = get_salesforce_token()
     headers = {
-        "Authorization": f"Bearer {token_data['access_token']}",
+        "Authorization": f"{token_data['API_KEY']}",
         "Content-Type": "application/json"
     }
     print("Token data:", token_data)  # 디버깅용 로그
