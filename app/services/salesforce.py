@@ -36,7 +36,7 @@ def get_salesforce_token():
 def get_leads():
     token_data = get_salesforce_token()
     headers = {
-        "Authorization": f"{token_data['API_KEY']}",
+        "Authorization": token_data['API_KEY'],
         "Content-Type": "application/json"
     }
 
@@ -54,7 +54,7 @@ def get_leads():
 def create_lead(data: LeadIn):
     token_data = get_salesforce_token()
     headers = {
-        "Authorization": f"{token_data['API_KEY']}",
+        "Authorization": token_data['API_KEY'],
         "Content-Type": "application/json"
     }
     instance_url = token_data["instance_url"]
