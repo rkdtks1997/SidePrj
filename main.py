@@ -4,6 +4,7 @@ from app.routes.interfaceData import router as interfaceData_router
 from app.routes.healthCheck import router as healthCheck
 import os
 
+routers = [interfaceData_router, healthCheck]
 
 # Render, Heroku 등에서 uvicorn app.main:app --host=0.0.0.0 --port=$PORT 로 실행
 app = FastAPI()
@@ -26,5 +27,5 @@ def root():
         ]}
     }
 
-app.include_router(interfaceData_router)
-app.include_router(healthCheck)
+for router in routers:
+    app.include_router(router)
