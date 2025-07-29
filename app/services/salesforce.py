@@ -69,5 +69,6 @@ def create_lead(data: LeadIn):
         "Company": data.company
     }
     print("Payload for lead creation:", payload)    
+    print("lead_url:: ", lead_url)    
     response = requests.post(lead_url, json=payload, headers=headers)
     return response.json()
