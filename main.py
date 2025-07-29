@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.interfaceData import router as lead_router
+from app.routes.interfaceData import router as interfaceData_router
+from app.routes.healthCheck import router as healthCheck
 import os
 
 
@@ -25,4 +26,5 @@ def root():
         ]}
     }
 
-app.include_router(lead_router)
+app.include_router(interfaceData_router)
+app.include_router(healthCheck)
