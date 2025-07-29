@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.lead import router as lead_router
+from app.routes.interfaceData import router as lead_router
 import os
 
 

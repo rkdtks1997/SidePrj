@@ -1,7 +1,6 @@
 import os
 import requests
-from app.models.lead import LeadIn
-
+from app.models.interfaceData import Interface_In
 
 SF_CLIENT_ID = os.environ.get('SF_CLIENT_ID')
 SF_CLIENT_SECRET = os.environ.get('SF_CLIENT_SECRET')
@@ -31,50 +30,27 @@ def get_salesforce_token():
     res.raise_for_status()
     return res.json()
 
-# Lead 조회
-
-def get_leads():
-    token_data = get_salesforce_token()
-    headers = {
-        "Authorization": API_KEY,
-        "Content-Type": "application/json"
-    }
-
-    instance_url = token_data["instance_url"]
-    query = "SELECT Id, FirstName, LastName, Company FROM Lead LIMIT 10"
-    response = requests.get(
-        f"{instance_url}/services/data/{SF_API_VERSION}/query",
-        headers=headers,
-        params={"q": query}
-    )
-    return response.json()
-
-# Lead 생성
-
-def create_lead(data: LeadIn):
+def create_interface(data: Interface_In):
     token_data = get_salesforce_token()
     headers = {
         "Authorization": API_KEY,
         "Content-Type": "application/json"
     }
     instance_url = token_data["instance_url"]
-    print("Token data:", token_data)  # 디버깅용 로그
-    print("Headers for lead query:", headers)  # 디버깅용 로그 
-    # Salesforce Lead 생성 API 호출
 
-    lead_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/Lead/"
+    interfaceData_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/InterfaceData__c/"
+    print("payload:", data)
     payload = {
         "FirstName": data.first_name,
         "LastName": data.last_name,
         "Company": data.company
     }
-    print("Testing Lead endpoint...")
-    
-    test_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/Lead/describe"
+
+    test_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/InterfaceData__c/describe"
     test_res = requests.get(test_url, headers=headers)
     print("Test response:", test_res.status_code, test_res.text)
 
     print("Payload for lead creation:", payload)    
-    print("lead_url:: ", lead_url)    
-    response = requests.post(lead_url, json=payload, headers=headers)
+    print("lead_url:: ", interfaceData_url)    
+    response = requests.post(interfaceData_url, json=payload, headers=headers)
     return response.json()

@@ -1,8 +1,8 @@
 
 
 from fastapi import APIRouter, Request
-from app.models.interfaceData import LeadIn
-from app.services.salesforce import get_leads, create_lead, get_salesforce_token
+from app.models.interfaceData import Interface_In
+from app.services.salesforce import create_interface, get_salesforce_token
 
 router = APIRouter()
 
@@ -18,13 +18,9 @@ def get_bearer_token():
         "raw": token_data
     }
 
-@router.get("/interfaceData")
-def read_leads():
-    return get_leads()
-
 @router.post("/create-interfaceData")
-def post_lead(data: LeadIn):
-    return create_lead(data)
+def post_interfaceData(data: Interface_In):
+    return create_interface(data)
 
 
 # Salesforce에서 Render로 POST 요청이 오면, 받은 데이터를 다시 Salesforce Lead로 생성
@@ -36,8 +32,8 @@ async def sf_lead_proxy(request: Request):
     first_name = body.get("FirstName__c")
     last_name = body.get("LastName__c")
     company = body.get("company")
-    interface_in = LeadIn(first_name=first_name, last_name=last_name, company=company)
-    result = create_lead(interface_in)
+    interface_in = interface_in(first_name=first_name, last_name=last_name, company=company)
+    result = create_interface(interface_in)
     print("Created interface Data:", result)
     
     return {"status": "created", "result": result}
