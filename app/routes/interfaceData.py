@@ -25,14 +25,14 @@ def post_interfaceData(data: Interface_In):
 
 # Salesforce에서 Render로 POST 요청이 오면, 받은 데이터를 다시 Salesforce Lead로 생성
 @router.post("/sf-interfaceData-proxy")
-async def sf_lead_proxy(request: Request):
+async def sf_interface_proxy(request: Request):
     body = await request.json()
     print("Received body:", body)
     # body에서 필요한 필드 추출 (Salesforce에서 오는 데이터 포맷에 맞게 수정 필요)
     first_name = body.get("FirstName__c")
     last_name = body.get("LastName__c")
     company = body.get("company")
-    interface_in = interface_in(first_name=first_name, last_name=last_name, company=company)
+    interface_in = Interface_In(first_name=first_name, last_name=last_name, company=company)
     result = create_interface(interface_in)
     print("Created interface Data:", result)
     
