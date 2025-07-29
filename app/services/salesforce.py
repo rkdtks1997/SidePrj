@@ -41,9 +41,9 @@ def create_interface(data: Interface_In):
     interfaceData_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/InterfaceData__c/"
     print("payload:", data)
     payload = {
-        "FirstName": data.first_name,
-        "LastName": data.last_name,
-        "Company": data.company
+        "FirstName__c": data.first_name,
+        "LastName__c": data.last_name,
+        "Company__c": data.company
     }
 
     test_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/InterfaceData__c/describe"
