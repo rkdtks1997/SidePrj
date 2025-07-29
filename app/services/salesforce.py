@@ -39,6 +39,8 @@ def get_leads():
         "Authorization": f"Bearer {token_data['access_token']}",
         "Content-Type": "application/json"
     }
+    print("Token data:", token_data)  # 디버깅용 로그
+    print("Headers for lead query:", headers)  # 디버깅용 로그 
     instance_url = token_data["instance_url"]
     query = "SELECT Id, FirstName, LastName, Company FROM Lead LIMIT 10"
     response = requests.get(
