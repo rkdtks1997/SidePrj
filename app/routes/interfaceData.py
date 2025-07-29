@@ -1,5 +1,3 @@
-
-
 from fastapi import APIRouter, Request
 from app.models.interfaceData import Interface_In
 from app.services.salesforce import create_interface, get_salesforce_token
