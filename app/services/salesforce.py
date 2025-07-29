@@ -57,11 +57,16 @@ def create_lead(data: LeadIn):
         "Content-Type": "application/json"
     }
     instance_url = token_data["instance_url"]
+    print("instance_url data:", instance_url)
+    print("Creating lead with data:", data)
+    # Salesforce Lead 생성 API 호출
+
     lead_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/Lead/"
     payload = {
         "FirstName": data.first_name,
         "LastName": data.last_name,
         "Company": data.company
     }
+    print("Payload for lead creation:", payload)    
     response = requests.post(lead_url, json=payload, headers=headers)
     return response.json()
