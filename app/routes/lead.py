@@ -1,7 +1,11 @@
 
+
 from fastapi import APIRouter, Request
 from app.models.lead import LeadIn
 from app.services.salesforce import get_leads, create_lead, get_salesforce_token
+
+router = APIRouter()
+
 # Bearer 토큰 발급용 엔드포인트
 @router.get("/get-bearer-token")
 def get_bearer_token():
@@ -11,8 +15,6 @@ def get_bearer_token():
         "instance_url": token_data.get("instance_url"),
         "raw": token_data
     }
-
-router = APIRouter()
 
 @router.get("/leads")
 def read_leads():
