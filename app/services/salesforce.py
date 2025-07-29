@@ -68,6 +68,12 @@ def create_lead(data: LeadIn):
         "LastName": data.last_name,
         "Company": data.company
     }
+    print("Testing Lead endpoint...")
+    
+    test_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/Lead/describe"
+    test_res = requests.get(test_url, headers=headers)
+    print("Test response:", test_res.status_code, test_res.text)
+
     print("Payload for lead creation:", payload)    
     print("lead_url:: ", lead_url)    
     response = requests.post(lead_url, json=payload, headers=headers)
