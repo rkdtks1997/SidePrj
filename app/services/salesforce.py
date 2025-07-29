@@ -18,7 +18,7 @@ def get_salesforce_token():
     if API_KEY:
         return {
             "access_token": API_KEY,
-            "instance_url": SF_LOGIN_URL
+            "instance_url": SFDC_URL  # 실제 인스턴스 URL 사용
         }
     # (추가) 필요시 기존 OAuth2 방식도 fallback으로 남겨둘 수 있음
     url = f"{SF_LOGIN_URL}/services/oauth2/token"
