@@ -14,6 +14,13 @@ SFDC_URL = os.environ.get('SFDC_URL')
 # Salesforce 인증
 
 def get_salesforce_token():
+    # API_KEY를 Bearer 토큰으로 직접 사용하는 방식
+    if API_KEY:
+        return {
+            "access_token": API_KEY,
+            "instance_url": SF_LOGIN_URL
+        }
+    # (추가) 필요시 기존 OAuth2 방식도 fallback으로 남겨둘 수 있음
     url = f"{SF_LOGIN_URL}/services/oauth2/token"
     payload = {
         "grant_type": "client_credentials",
