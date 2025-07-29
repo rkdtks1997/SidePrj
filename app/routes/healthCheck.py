@@ -2,6 +2,6 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/healthz")
-async def healthz_proxy():
-    return {"commentStr": "health Check Success"}
+@router.api_route("/healthz", methods=["GET", "HEAD"])
+async def healthz():
+    return {"status": "ok"}
