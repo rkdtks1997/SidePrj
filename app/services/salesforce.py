@@ -39,8 +39,7 @@ def get_leads():
         "Authorization": f"{token_data['API_KEY']}",
         "Content-Type": "application/json"
     }
-    print("Token data:", token_data)  # 디버깅용 로그
-    print("Headers for lead query:", headers)  # 디버깅용 로그 
+
     instance_url = token_data["instance_url"]
     query = "SELECT Id, FirstName, LastName, Company FROM Lead LIMIT 10"
     response = requests.get(
@@ -59,8 +58,8 @@ def create_lead(data: LeadIn):
         "Content-Type": "application/json"
     }
     instance_url = token_data["instance_url"]
-    print("instance_url data:", instance_url)
-    print("Creating lead with data:", data)
+    print("Token data:", token_data)  # 디버깅용 로그
+    print("Headers for lead query:", headers)  # 디버깅용 로그 
     # Salesforce Lead 생성 API 호출
 
     lead_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/Lead/"
