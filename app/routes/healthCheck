@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 
 router = APIRouter()
 
-@router.post("/healthz")
+@router.get("/healthz")
 async def healthz_proxy():
     commentStr = "health Check Success"
     return {"commentStr" : commentStr}
