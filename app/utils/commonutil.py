@@ -32,7 +32,7 @@ def get_salesforce_token():
 
 def get_headers(access_token: str):
     return {
-        "Authorization": f"Bearer {access_token}",
+        "Authorization": access_token,
         "Content-Type": "application/json"
     }
 
