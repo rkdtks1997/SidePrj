@@ -21,13 +21,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         request_log[client_ip] = [
             ts for ts in request_log[client_ip] if now - ts < self.window_sec
         ]
-
+        print('request_log[client_ip]',request_log[client_ip])
+        print('self.max_requests',self.max_requests)
         if len(request_log[client_ip]) >= self.max_requests:
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Too many requests. Please slow down."}
             )
-
+        
         # 요청 기록 추가 후 다음 미들웨어로 넘김
         request_log[client_ip].append(now)
         return await call_next(request)
