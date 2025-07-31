@@ -1,14 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.interfaceData import router as interfaceData_router
+from app.interseptor.ratelimiter import RateLimitMiddleware
 from app.routes.healthCheck import router as healthCheck
+
 import os
 
 routers = [interfaceData_router, healthCheck]
 
-# Render, Heroku 등에서 uvicorn app.main:app --host=0.0.0.0 --port=$PORT 로 실행
+# FastAPI 앱 객체 생성
 app = FastAPI()
 
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,7 +20,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 디버그용 루트 엔드포인트
+# ✅ Rate Limiting 인터셉터 등록
+app.add_middleware(RateLimitMiddleware, max_requests=30, window_sec=60)
+
+# 디버깅용 루트 엔드포인트
 @app.get("/")
 def root():
     return {
@@ -27,5 +33,6 @@ def root():
         ]}
     }
 
+# 라우터 등록
 for router in routers:
     app.include_router(router)

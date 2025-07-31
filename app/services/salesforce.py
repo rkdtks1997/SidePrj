@@ -6,7 +6,7 @@ SF_CLIENT_ID = os.environ.get('SF_CLIENT_ID')
 SF_CLIENT_SECRET = os.environ.get('SF_CLIENT_SECRET')
 
 SF_LOGIN_URL = os.environ.get('SF_LOGIN_URL')
-SF_API_VERSION = os.environ.get('SF_API_VERSION', 'v58.0')
+SF_API_VERSION = os.environ.get('SF_API_VERSION')
 API_KEY = os.environ.get('API_KEY')
 SFDC_URL = os.environ.get('SFDC_URL')
 
@@ -49,8 +49,6 @@ def create_interface(data: Interface_In):
     test_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/InterfaceData__c/describe"
     test_res = requests.get(test_url, headers=headers)
     print("Test response:", test_res.status_code, test_res.text)
-
-    print("Payload for lead creation:", payload)    
-    print("lead_url:: ", interfaceData_url)    
+    
     response = requests.post(interfaceData_url, json=payload, headers=headers)
     return response.json()
