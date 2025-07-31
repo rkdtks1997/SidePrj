@@ -21,8 +21,9 @@ app.add_middleware(
 )
 
 # ✅ Rate Limiting 인터셉터 등록
+print('RateLimitMiddleware',RateLimitMiddleware)
 app.add_middleware(RateLimitMiddleware, max_requests=30, window_sec=60)
-
+print('RateLimitMiddleware2',RateLimitMiddleware)
 # 디버깅용 루트 엔드포인트
 @app.get("/")
 def root():

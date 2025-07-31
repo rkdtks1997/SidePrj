@@ -12,7 +12,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_sec = window_sec
-
+    print('RateLimitMiddleware', self)
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host
         now = time.time()
@@ -21,8 +21,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         request_log[client_ip] = [
             ts for ts in request_log[client_ip] if now - ts < self.window_sec
         ]
-        print('request_log[client_ip]',request_log[client_ip])
-        print('self.max_requests',self.max_requests)
+
         if len(request_log[client_ip]) >= self.max_requests:
             return JSONResponse(
                 status_code=429,
