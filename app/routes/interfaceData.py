@@ -32,11 +32,9 @@ def post_interface_data(data: Interface_In):
 async def sf_interface_proxy(request: Request):
     try:
         body = await request.json()
-        print("Received body:", body)
 
         # 필수 필드 확인
         if not all(k in body for k in ("first_name", "last_name", "company")):
-            print("에러나는곳")
             raise HTTPException(status_code=400, detail="필수 필드 누락: first_name, last_name, company")
 
         interface_in = Interface_In(
@@ -44,7 +42,6 @@ async def sf_interface_proxy(request: Request):
             last_name=body["last_name"],
             company=body["company"]
         )
-        print("interface_in:", interface_in)
         result = create_interface(interface_in)
         return {"status": "created", "result": result}
 
