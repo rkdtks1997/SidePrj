@@ -12,7 +12,7 @@ def get_bearer_token():
     try:
         token_data = get_salesforce_token()
         return {
-            "access_token": token_data.get("access_token"),
+            "access_token": token_data.get("API_KEY"),
             "instance_url": token_data.get("instance_url"),
             "raw": token_data
         }

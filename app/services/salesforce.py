@@ -24,4 +24,5 @@ def create_interface(data: Interface_In):
 
     # POST 데이터 생성
     res = sf_post("sobjects/InterfaceData__c", payload, access_token, instance_url)
+    print("res",res)
     return res.json()
