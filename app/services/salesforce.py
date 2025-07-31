@@ -1,54 +1,27 @@
-import os
-import requests
+# app/services/interface_service.py
+
 from app.models.interfaceData import Interface_In
-
-SF_CLIENT_ID = os.environ.get('SF_CLIENT_ID')
-SF_CLIENT_SECRET = os.environ.get('SF_CLIENT_SECRET')
-
-SF_LOGIN_URL = os.environ.get('SF_LOGIN_URL')
-SF_API_VERSION = os.environ.get('SF_API_VERSION')
-API_KEY = os.environ.get('API_KEY')
-SFDC_URL = os.environ.get('SFDC_URL')
-
-# Salesforce 인증
-
-def get_salesforce_token():
-    # API_KEY를 Bearer 토큰으로 직접 사용하는 방식
-    if API_KEY:
-        return {
-            "access_token": API_KEY,
-            "instance_url": SFDC_URL  # 실제 인스턴스 URL 사용
-        }
-    # (추가) 필요시 기존 OAuth2 방식도 fallback으로 남겨둘 수 있음
-    url = f"{SF_LOGIN_URL}/services/oauth2/token"
-    payload = {
-        "grant_type": "client_credentials",
-        "client_id": SF_CLIENT_ID,
-        "client_secret": SF_CLIENT_SECRET
-    }
-    res = requests.post(url, data=payload)
-    res.raise_for_status()
-    return res.json()
+from app.utils.commonutil import get_salesforce_token, sf_get, sf_post
 
 def create_interface(data: Interface_In):
     token_data = get_salesforce_token()
-    headers = {
-        "Authorization": API_KEY,
-        "Content-Type": "application/json"
-    }
+    access_token = token_data["access_token"]
     instance_url = token_data["instance_url"]
 
-    interfaceData_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/InterfaceData__c/"
-    print("payload:", data)
+    # payload 구성
     payload = {
         "FirstName__c": data.first_name,
         "LastName__c": data.last_name,
         "Company__c": data.company
     }
 
-    test_url = f"{instance_url}/services/data/{SF_API_VERSION}/sobjects/InterfaceData__c/describe"
-    test_res = requests.get(test_url, headers=headers)
-    print("Test response:", test_res.status_code, test_res.text)
-    
-    response = requests.post(interfaceData_url, json=payload, headers=headers)
-    return response.json()
+    # describe 테스트 (optional)
+    try:
+        res = sf_get("sobjects/InterfaceData__c/describe", access_token, instance_url)
+        print("Describe:", res.status_code)
+    except Exception as e:
+        print("Describe failed:", e)
+
+    # POST 데이터 생성
+    res = sf_post("sobjects/InterfaceData__c", payload, access_token, instance_url)
+    return res.json()

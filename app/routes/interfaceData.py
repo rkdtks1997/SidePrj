@@ -1,48 +1,56 @@
 import requests
-from fastapi import APIRouter, Request
-from fastapi.exceptions import HTTPException
-
+from fastapi import APIRouter, Request, HTTPException
 from app.models.interfaceData import Interface_In
-from app.services.salesforce import create_interface, get_salesforce_token
+from app.services.salesforce import create_interface
+from app.utils.commonutil import get_salesforce_token
 
 router = APIRouter()
 
-# Bearer 토큰 발급용 엔드포인트
+# ✅ Bearer 토큰 발급용 엔드포인트
 @router.get("/get-bearer-token")
 def get_bearer_token():
     try:
         token_data = get_salesforce_token()
-        print("Token data:", token_data)  # 디버깅용 로그
-        # 필요한 경우 토큰 데이터에서 특정 필드만 반환   
         return {
             "access_token": token_data.get("access_token"),
             "instance_url": token_data.get("instance_url"),
             "raw": token_data
         }
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Salesforce API 요청 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"[Token Error] Salesforce 인증 실패: {str(e)}")
 
+
+# ✅ InterfaceData 생성 (직접 요청)
 @router.post("/create-interfaceData")
-def post_interfaceData(data: Interface_In):
+def post_interface_data(data: Interface_In):
     try:
         return create_interface(data)
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Salesforce API 요청 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"[Create Error] InterfaceData 생성 실패: {str(e)}")
 
-# Salesforce에서 Render로 POST 요청이 오면, 받은 데이터를 다시 Salesforce Lead로 생성
+
+# ✅ Salesforce → Render 로 POST 요청 프록시 처리
 @router.post("/sf-interfaceData-proxy")
 async def sf_interface_proxy(request: Request):
     try:
         body = await request.json()
         print("Received body:", body)
-        # body에서 필요한 필드 추출 (Salesforce에서 오는 데이터 포맷에 맞게 수정 필요)
-        first_name = body.get("first_name")
-        last_name = body.get("last_name")
-        company = body.get("company")
-        interface_in = Interface_In(first_name=first_name, last_name=last_name, company=company)
+
+        # 필수 필드 확인
+        if not all(k in body for k in ("first_name", "last_name", "company")):
+            raise HTTPException(status_code=400, detail="필수 필드 누락: first_name, last_name, company")
+
+        interface_in = Interface_In(
+            first_name=body["first_name"],
+            last_name=body["last_name"],
+            company=body["company"]
+        )
+
         result = create_interface(interface_in)
-        print("Created interface Data:", result)
-        
         return {"status": "created", "result": result}
+
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Salesforce API 요청 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"[Proxy Error] Salesforce API 오류: {str(e)}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"[Proxy Error] 처리 중 오류 발생: {str(e)}")
