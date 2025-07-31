@@ -12,7 +12,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_sec = window_sec
-    print('RateLimitMiddleware', self)
+        print('RateLimitMiddleware', self)
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host
         now = time.time()
