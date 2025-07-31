@@ -18,13 +18,16 @@ def get_salesforce_token():
             "access_token": API_KEY,
             "instance_url": SFDC_URL
         }
-
+    print("API_KEY",API_KEY)
+    print("SFDC_URL",SFDC_URL)
     url = f"{SF_LOGIN_URL}/services/oauth2/token"
+    print("url",url)
     payload = {
         "grant_type": "client_credentials",
         "client_id": SF_CLIENT_ID,
         "client_secret": SF_CLIENT_SECRET
     }
+    print("payload",payload)
     res = requests.post(url, data=payload)
     res.raise_for_status()
     return res.json()
