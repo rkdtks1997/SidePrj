@@ -43,7 +43,7 @@ async def sf_interface_proxy(request: Request):
             last_name=body["last_name"],
             company=body["company"]
         )
-
+        print("interface_in:", interface_in)
         result = create_interface(interface_in)
         return {"status": "created", "result": result}
 
