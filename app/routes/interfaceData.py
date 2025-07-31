@@ -36,6 +36,7 @@ async def sf_interface_proxy(request: Request):
 
         # 필수 필드 확인
         if not all(k in body for k in ("first_name", "last_name", "company")):
+            print("에러나는곳")
             raise HTTPException(status_code=400, detail="필수 필드 누락: first_name, last_name, company")
 
         interface_in = Interface_In(
