@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.interfaceData import router as interfaceData_router
+from app.routes.interfaceData import router as interfaceData
 from app.interseptor.ratelimiter import RateLimitMiddleware
 from app.routes.healthCheck import router as healthCheck
 
 import os
 
-routers = [interfaceData_router, healthCheck]
+routers = [interfaceData, healthCheck]
 
 # FastAPI 앱 객체 생성
 app = FastAPI()
@@ -21,9 +21,8 @@ app.add_middleware(
 )
 
 # ✅ Rate Limiting 인터셉터 등록
-print('RateLimitMiddleware',RateLimitMiddleware)
 app.add_middleware(RateLimitMiddleware, max_requests=30, window_sec=60)
-print('RateLimitMiddleware2',RateLimitMiddleware)
+
 # 디버깅용 루트 엔드포인트
 @app.get("/")
 def root():

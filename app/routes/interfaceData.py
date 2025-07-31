@@ -20,7 +20,6 @@ def get_bearer_token():
         raise HTTPException(status_code=500, detail=f"[Token Error] Salesforce 인증 실패: {str(e)}")
 
 
-# ✅ InterfaceData 생성 (직접 요청)
 @router.post("/create-interfaceData")
 def post_interface_data(data: Interface_In):
     try:
@@ -29,7 +28,6 @@ def post_interface_data(data: Interface_In):
         raise HTTPException(status_code=500, detail=f"[Create Error] InterfaceData 생성 실패: {str(e)}")
 
 
-# ✅ Salesforce → Render 로 POST 요청 프록시 처리
 @router.post("/sf-interfaceData-proxy")
 async def sf_interface_proxy(request: Request):
     try:
