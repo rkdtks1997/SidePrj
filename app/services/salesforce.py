@@ -4,12 +4,11 @@ from app.models.interfaceData import Interface_In
 from app.utils.commonutil import get_salesforce_token, sf_get, sf_post
 
 def create_interface(data: Interface_In):
-    print("스타트!!")
+
     token_data = get_salesforce_token()
-    print("token_data",token_data)
+
     access_token = token_data["access_token"]
     instance_url = token_data["instance_url"]
-    print("access_token",access_token)
     # payload 구성
     payload = {
         "FirstName__c": data.first_name,

@@ -46,6 +46,8 @@ def get_headers(access_token: str):
 def sf_get(path: str, access_token: str, instance_url: str):
     """GET 요청"""
     url = f"{instance_url}/services/data/{SF_API_VERSION}/{path.lstrip('/')}"
+    print("url", url)
+    
     headers = get_headers(access_token)
     res = requests.get(url, headers=headers)
     res.raise_for_status()
