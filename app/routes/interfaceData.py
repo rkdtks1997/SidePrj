@@ -28,20 +28,6 @@ def post_interface_data(data: Interface_In):
         raise HTTPException(status_code=500, detail=f"[Create Error] InterfaceData 생성 실패: {str(e)}")
 
 
-def send_to_salesforce(subway_payload):
-    """Salesforce로 데이터 POST 전송"""
-    try:
-        token_data = get_salesforce_token()
-
-        access_token = token_data["access_token"]
-        instance_url = token_data["instance_url"]
-
-        response = requests.post(salesforce_url, json=subway_payload, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"[Salesforce API Error] {str(e)}")
-    
 @router.post("/sf-interfaceData-proxy")
 async def sf_interface_proxy(request: Request):
     try:
