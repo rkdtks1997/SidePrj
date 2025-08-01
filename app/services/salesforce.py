@@ -8,7 +8,7 @@ def create_interface(data: Interface_In):
     token_data = get_salesforce_token()
     print("token_data",token_data)
     access_token = token_data["API_KEY"]
-    instance_url = token_data["instance_url"]
+    instance_url = token_data["SFDC_URL"]
     print("access_token",access_token)
     # payload 구성
     payload = {

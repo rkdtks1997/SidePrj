@@ -13,7 +13,7 @@ def get_bearer_token():
         token_data = get_salesforce_token()
         return {
             "access_token": token_data.get("API_KEY"),
-            "instance_url": token_data.get("instance_url"),
+            "instance_url": token_data.get("SFDC_URL"),
             "raw": token_data
         }
     except requests.exceptions.RequestException as e:
