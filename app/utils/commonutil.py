@@ -13,6 +13,8 @@ SFDC_URL = os.environ.get('SFDC_URL')
 
 def get_salesforce_token():
     """Bearer 토큰 또는 OAuth2 방식으로 Salesforce 인증"""
+
+    print("get_salesforce_token called")
     if API_KEY:
         return {
             "access_token": API_KEY,
