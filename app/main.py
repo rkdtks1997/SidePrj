@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.interfaceData import router as interfaceData
 from app.interseptor.ratelimiter import RateLimitMiddleware
+
+from app.routes.interfaceData import router as interfaceData
 from app.routes.healthCheck import router as healthCheck
+from app.routes.publicApiData import router as publicApiData
+
 
 import os
 
-routers = [interfaceData, healthCheck]
+routers = [interfaceData, healthCheck,publicApiData]
 
 # FastAPI 앱 객체 생성
 app = FastAPI()
