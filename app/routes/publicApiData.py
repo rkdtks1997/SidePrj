@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 import requests
 import os
-from app.utils.commonutil import get_salesforce_token
-from app.utils.commonutil import sf_post
+
+from app.utils.commonutil import send_to_salesforce
 
 router = APIRouter()
 
@@ -25,19 +25,7 @@ def get_subway_data():
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"[Subway API Error] {str(e)}")
     
-def send_to_salesforce(path: str, payload: dict):
-    """Salesforce에 POST 요청을 보내는 공통 함수"""   
-    try:
-        token_data = get_salesforce_token()
-        access_token = token_data["access_token"]
-        instance_url = token_data["instance_url"]
 
-        # 내부 Salesforce POST 유틸 사용
-        response = sf_post(path, payload, access_token, instance_url)
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"[Salesforce API Error] {str(e)}")
-    
 @router.post("/sf-subway-proxy")
 async def sf_subway_proxy():
     try:
@@ -91,16 +79,6 @@ def get_news_data():
     except ValueError as ve:
         raise HTTPException(status_code=500, detail=f"[News API Error] {str(ve)}")
 
-def send_to_salesforce(path: str, payload: dict):
-    try:
-        token_data = get_salesforce_token()
-        access_token = token_data["access_token"]
-        instance_url = token_data["instance_url"]
-        response = sf_post(path, payload, access_token, instance_url)
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"[Salesforce API Error] {str(e)}")
-
 @router.post("/sf-news-proxy")
 async def sf_news_proxy():
     try:
@@ -117,7 +95,7 @@ async def sf_news_proxy():
                 "Link__c": item.get("link", ""),
                 "PubDate__c": item.get("pubDate", "")
             }
-
+            print('payload',payload)
             try:
                 result = send_to_salesforce("sobjects/NewsData__c", payload)
                 results.append({"success": True, "result": result})
