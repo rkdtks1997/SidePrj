@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import Request,APIRouter, HTTPException
 import requests
 import os
 from datetime import datetime
@@ -92,14 +92,16 @@ def get_news_data():
     except ValueError as ve:
         raise HTTPException(status_code=500, detail=f"[News API Error] 환경변수 오류: {str(ve)}")
     
-def get_movie_data():
+def get_movie_data(target_dt: str = None):
     """영화 API 호출"""
     try:
         if not all([MOVIE_KEY, MOVIE_URL]):
             raise ValueError("환경변수 설정이 누락되었습니다.")
 
-        targetDt = datetime.now().day(-1).strftime("%Y%m%d")
-        url = f"{MOVIE_URL}?key={MOVIE_KEY}&targetDt={targetDt}"
+        if not target_dt:
+            target_dt = datetime.now().strftime("%Y%m%d")
+
+        url = f"{MOVIE_URL}?key={MOVIE_KEY}&targetDt={target_dt}"
         print(f"🔍 요청 URL: {url}")
 
         response = requests.get(url)
@@ -149,8 +151,9 @@ async def sf_news_proxy():
 @router.post("/sf-movie-proxy")
 async def sf_movie_proxy():
     try:
-        movie_data = get_movie_data()
-
+        body = await Request.json()
+        target_dt = body.get("targetDt")
+        movie_data = get_movie_data(target_dt)
         print("🔍 받은 전체 영화 데이터:", movie_data)
 
         box_office_list = movie_data.get("boxOfficeResult", {}).get("dailyBoxOfficeList", [])
