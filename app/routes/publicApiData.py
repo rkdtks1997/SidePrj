@@ -100,9 +100,9 @@ def get_movie_data():
         if not all([MOVIE_KEY, MOVIE_URL]):
             raise ValueError("환경변수 설정이 누락되었습니다.")
 
-        targetDt = "250704"  # 혹은 프론트에서 받은 키워드 등으로 동적으로 구성
+        # targetDt = "250704"  # 혹은 프론트에서 받은 키워드 등으로 동적으로 구성
 
-        url = f"{MOVIE_URL}?key={MOVIE_KEY}&targetDt={targetDt}"
+        url = f"{MOVIE_URL}?key={MOVIE_KEY}"
         print(f"🔍 요청 URL: {url}")
 
         response = requests.get(url)
