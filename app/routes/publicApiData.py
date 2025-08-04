@@ -177,9 +177,8 @@ async def sf_movie_proxy(request: Request):  # ✅ 인스턴스를 인자로 받
                 result = send_to_salesforce("sobjects/MovieData__c", payload)
                 results.append({"success": True, "result": result})
 
-            except Exception as inner_error:
-                print("❌ 개별 오류 발생:", str(inner_error))
-                results.append({"success": False, "error": str(inner_error)})
+            except Exception as single_error:
+                results.append({"success": False, "error": str(single_error), "data": payload})
 
         return {
             "status": "success",
