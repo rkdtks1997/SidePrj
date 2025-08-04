@@ -10,7 +10,7 @@ SUBWAY_API_KEY = os.environ.get("SUBWAY_API_KEY")
 SUBWAY_URL = os.environ.get("SUBWAY_URL")
 
 NEWS_CLIENTID = os.environ.get("NEWS_CLIENTID")
-NEWS_SECRET = os.environ.get("SUBWAY_URL")
+NEWS_SECRET = os.environ.get("NEWS_SECRET")
 NEWS_URL = os.environ.get("NEWS_URL")
 
 
