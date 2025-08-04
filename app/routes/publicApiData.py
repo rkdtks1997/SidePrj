@@ -66,20 +66,19 @@ def get_news_data():
         if not all([NEWS_CLIENTID, NEWS_SECRET, NEWS_URL]):
             raise ValueError("환경변수 설정이 누락되었습니다.")
 
-        query = ""  # 혹은 프론트에서 받은 키워드 등으로 동적으로 구성
+        query = "AI"  # 혹은 프론트에서 받은 키워드 등으로 동적으로 구성
 
         headers = {
-            "Host": "openapi.naver.com",
-            "User-Agent" : "curl/7.49.1",
-            "Accept": "*/*",
             "X-Naver-Client-Id": NEWS_CLIENTID,
             "X-Naver-Client-Secret": NEWS_SECRET
         }
+        print(f"🔍 요청 헤더: {headers}")
 
         url = f"{NEWS_URL}?query={query}"
         print(f"🔍 요청 URL: {url}")
 
         response = requests.get(url, headers=headers)
+        print(f"🔍 응답 상태 코드: {response.status_code}")
         response.raise_for_status()
 
         return response.json()
