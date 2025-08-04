@@ -149,11 +149,12 @@ async def sf_news_proxy():
         raise HTTPException(status_code=500, detail=f"[Proxy Error] {str(e)}")
     
 @router.post("/sf-movie-proxy")
-async def sf_movie_proxy():
+async def sf_movie_proxy(request: Request):  # ✅ 인스턴스를 인자로 받기
+    body = await request.json()
+    target_dt = body.get("targetDt")  # 예: '20240704'
     try:
-        body = await Request.json()
         print("📥 요청 본문:", body)
-        target_dt = body.get("targetDt")
+
         print("📅 요청된 날짜:", target_dt)
         movie_data = get_movie_data(target_dt)
         print("🔍 받은 전체 영화 데이터:", movie_data)
