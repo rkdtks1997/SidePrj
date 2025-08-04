@@ -173,8 +173,6 @@ async def sf_movie_proxy(request: Request):  # ✅ 인스턴스를 인자로 받
                     "OpenDate__c": item.get("openDt", ""),
                     "AudienceCount__c": item.get("audiCnt", "")
                 }
-                print("📦 SF로 전송할 Payload:", payload)
-                print("💡 send_to_salesforce 타입:", type(send_to_salesforce))  # <class 'function'> 이어야 정상
 
                 result = send_to_salesforce("sobjects/MovieData__c", payload)
                 results.append({"success": True, "result": result})

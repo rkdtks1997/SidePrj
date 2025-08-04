@@ -68,6 +68,7 @@ def send_to_salesforce(path: str, payload: dict):
 
         # 내부 Salesforce POST 유틸 사용
         response = sf_post(path, payload, access_token, instance_url)
+        print("Salesforce Response:", response.status_code, response.json())
         return response.json()
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"[Salesforce API Error] {str(e)}")
