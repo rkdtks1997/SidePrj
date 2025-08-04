@@ -146,26 +146,28 @@ async def sf_news_proxy():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"[Proxy Error] {str(e)}")
-
+    
 @router.post("/sf-movie-proxy")
 async def sf_movie_proxy():
     try:
         movie_data = get_movie_data()
-        print("Movie Data:", movie_data)
-        if "items" not in movie_data:
-            raise HTTPException(status_code=400, detail="영화 정보 없음")
+
+        box_office_list = movie_data.get("boxOfficeResult", {}).get("dailyBoxOfficeList", [])
+
+        if not box_office_list:
+            raise HTTPException(status_code=400, detail="영화 정보가 없습니다.")
 
         results = []
-        for item in movie_data["items"]:
+        for item in box_office_list:
             payload = {
-                "Title__c": item.get("title", ""),
-                "Description__c": item.get("description", ""),
-                "Link__c": item.get("link", ""),
-                "PubDate__c": item.get("pubDate", "")
+                "Title__c": item.get("movieNm", ""),
+                "Rank__c": item.get("rank", ""),
+                "OpenDate__c": item.get("openDt", ""),
+                "AudienceCount__c": item.get("audiCnt", "")
             }
-            print('payload',payload)
+            print("payload", payload)
             try:
-                result = send_to_salesforce("sobjects/NewsData__c", payload)
+                result = send_to_salesforce("sobjects/MovieData__c", payload)
                 results.append({"success": True, "result": result})
             except Exception as single_error:
                 results.append({"success": False, "error": str(single_error), "data": payload})
