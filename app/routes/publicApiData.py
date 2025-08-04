@@ -152,6 +152,8 @@ async def sf_movie_proxy():
     try:
         movie_data = get_movie_data()
 
+        print("🔍 받은 전체 영화 데이터:", movie_data)
+
         box_office_list = movie_data.get("boxOfficeResult", {}).get("dailyBoxOfficeList", [])
 
         if not box_office_list:
@@ -159,18 +161,21 @@ async def sf_movie_proxy():
 
         results = []
         for item in box_office_list:
-            payload = {
-                "Title__c": item.get("movieNm", ""),
-                "Rank__c": item.get("rank", ""),
-                "OpenDate__c": item.get("openDt", ""),
-                "AudienceCount__c": item.get("audiCnt", "")
-            }
-            print("payload", payload)
             try:
+                payload = {
+                    "Title__c": item.get("movieNm", ""),
+                    "Rank__c": item.get("rank", ""),
+                    "OpenDate__c": item.get("openDt", ""),
+                    "AudienceCount__c": item.get("audiCnt", "")
+                }
+                print("📦 SF로 전송할 Payload:", payload)
+
                 result = send_to_salesforce("sobjects/MovieData__c", payload)
                 results.append({"success": True, "result": result})
-            except Exception as single_error:
-                results.append({"success": False, "error": str(single_error), "data": payload})
+
+            except Exception as inner_error:
+                print("❌ 개별 오류 발생:", str(inner_error))
+                results.append({"success": False, "error": str(inner_error)})
 
         return {
             "status": "success",
@@ -179,5 +184,5 @@ async def sf_movie_proxy():
         }
 
     except Exception as e:
+        print("🔥 전체 예외:", str(e))
         raise HTTPException(status_code=500, detail=f"[Proxy Error] {str(e)}")
-
