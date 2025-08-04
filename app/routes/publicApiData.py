@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 import requests
 import os
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 
 from app.utils.commonutil import send_to_salesforce
 
