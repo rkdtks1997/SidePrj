@@ -150,11 +150,11 @@ async def sf_news_proxy():
 @router.post("/sf-movie-proxy")
 async def sf_movie_proxy():
     try:
-        movie_data = get_news_data()
+        movie_data = get_movie_data()
 
         if "items" not in movie_data:
-            raise HTTPException(status_code=400, detail="뉴스 정보 없음")
-
+            raise HTTPException(status_code=400, detail="영화 정보 없음")
+        print("Movie Data:", movie_data)
         results = []
         for item in movie_data["items"]:
             payload = {
