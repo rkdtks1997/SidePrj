@@ -174,7 +174,7 @@ async def sf_movie_proxy(request: Request):  # ✅ 인스턴스를 인자로 받
                 "AudienceCount__c": item.get("audiCnt", "")
             }
             try:
-                result = send_to_salesforce("sobjects/MovieData__c", payload)
+                result = send_to_salesforce("sobjects/NewsData__c", payload)
                 results.append({"success": True, "result": result})
 
             except Exception as single_error:
