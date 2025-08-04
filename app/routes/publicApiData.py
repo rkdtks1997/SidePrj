@@ -166,14 +166,14 @@ async def sf_movie_proxy(request: Request):  # ✅ 인스턴스를 인자로 받
 
         results = []
         for item in box_office_list:
-            try:
-                payload = {
-                    "Title__c": item.get("movieNm", ""),
-                    "Rank__c": item.get("rank", ""),
-                    "OpenDate__c": item.get("openDt", ""),
-                    "AudienceCount__c": item.get("audiCnt", "")
-                }
 
+            payload = {
+                "Title__c": item.get("movieNm", ""),
+                "Rank__c": item.get("rank", ""),
+                "OpenDate__c": item.get("openDt", ""),
+                "AudienceCount__c": item.get("audiCnt", "")
+            }
+            try:
                 result = send_to_salesforce("sobjects/MovieData__c", payload)
                 results.append({"success": True, "result": result})
 
