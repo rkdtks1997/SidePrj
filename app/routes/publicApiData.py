@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import requests
 import os
-
+from datetime import datetime
 from app.utils.commonutil import send_to_salesforce
 
 router = APIRouter()
@@ -12,6 +12,9 @@ SUBWAY_URL = os.environ.get("SUBWAY_URL")
 NEWS_CLIENTID = os.environ.get("NEWS_CLIENTID")
 NEWS_SECRET = os.environ.get("NEWS_SECRET")
 NEWS_URL = os.environ.get("NEWS_URL")
+
+MOVIE_KEY = os.environ.get("MOVIE_KEY")
+MOVIE_URL = os.environ.get("MOVIE_URL")
 
 
 
@@ -61,7 +64,7 @@ async def sf_subway_proxy():
         raise HTTPException(status_code=500, detail=f"[Proxy Error] 처리 중 오류 발생: {str(e)}")
     
 def get_news_data():
-    """네이버 뉴스 API 호출"""
+    """뉴스 API 호출"""
     try:
         if not all([NEWS_CLIENTID, NEWS_SECRET, NEWS_URL]):
             raise ValueError("환경변수 설정이 누락되었습니다.")
@@ -88,6 +91,29 @@ def get_news_data():
 
     except ValueError as ve:
         raise HTTPException(status_code=500, detail=f"[News API Error] 환경변수 오류: {str(ve)}")
+    
+def get_movie_data():
+    """영화 API 호출"""
+    try:
+        if not all([MOVIE_KEY, MOVIE_URL]):
+            raise ValueError("환경변수 설정이 누락되었습니다.")
+
+        targetDt = datetime.now()  # 혹은 프론트에서 받은 키워드 등으로 동적으로 구성
+
+        url = f"{MOVIE_URL}?key={MOVIE_KEY}&targetDt={targetDt}"
+        print(f"🔍 요청 URL: {url}")
+
+        response = requests.get(url)
+        print(f"🔍 응답 상태 코드: {response.status_code}")
+        response.raise_for_status()
+
+        return response.json()
+
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"[News API Error] 요청 실패: {str(e)}")
+
+    except ValueError as ve:
+        raise HTTPException(status_code=500, detail=f"[News API Error] 환경변수 오류: {str(ve)}")
 
 @router.post("/sf-news-proxy")
 async def sf_news_proxy():
@@ -99,6 +125,38 @@ async def sf_news_proxy():
 
         results = []
         for item in news_data["items"]:
+            payload = {
+                "Title__c": item.get("title", ""),
+                "Description__c": item.get("description", ""),
+                "Link__c": item.get("link", ""),
+                "PubDate__c": item.get("pubDate", "")
+            }
+            print('payload',payload)
+            try:
+                result = send_to_salesforce("sobjects/NewsData__c", payload)
+                results.append({"success": True, "result": result})
+            except Exception as single_error:
+                results.append({"success": False, "error": str(single_error), "data": payload})
+
+        return {
+            "status": "success",
+            "count": len(results),
+            "results": results
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"[Proxy Error] {str(e)}")
+
+@router.post("/sf-movie-proxy")
+async def sf_movie_proxy():
+    try:
+        movie_data = get_news_data()
+
+        if "items" not in movie_data:
+            raise HTTPException(status_code=400, detail="뉴스 정보 없음")
+
+        results = []
+        for item in movie_data["items"]:
             payload = {
                 "Title__c": item.get("title", ""),
                 "Description__c": item.get("description", ""),
