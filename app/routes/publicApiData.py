@@ -104,22 +104,22 @@ def get_movie_data():
         print(f"🔍 요청 URL: {url}")
 
         response = requests.get(url)
-        print(f"🔍 응답 상태 코드: {response.status_code}")
+        print(f"🔍 응답 상태 코드: {response}")
         response.raise_for_status()
 
         return response.json()
 
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"[News API Error] 요청 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"[Movie API Error] 요청 실패: {str(e)}")
 
     except ValueError as ve:
-        raise HTTPException(status_code=500, detail=f"[News API Error] 환경변수 오류: {str(ve)}")
+        raise HTTPException(status_code=500, detail=f"[Movie API Error] 환경변수 오류: {str(ve)}")
 
 @router.post("/sf-news-proxy")
 async def sf_news_proxy():
     try:
         news_data = get_news_data()
-
+        print("News Data:", news_data)
         if "items" not in news_data:
             raise HTTPException(status_code=400, detail="뉴스 정보 없음")
 
@@ -151,10 +151,10 @@ async def sf_news_proxy():
 async def sf_movie_proxy():
     try:
         movie_data = get_movie_data()
-
+        print("Movie Data:", movie_data)
         if "items" not in movie_data:
             raise HTTPException(status_code=400, detail="영화 정보 없음")
-        print("Movie Data:", movie_data)
+
         results = []
         for item in movie_data["items"]:
             payload = {
