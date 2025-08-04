@@ -31,7 +31,7 @@ async def sf_subway_proxy():
     try:
         # 실시간 도착 데이터 조회
         subway_data = get_subway_data()
-
+        print("Subway Data:", subway_data)
         if "realtimeArrivalList" not in subway_data:
             raise HTTPException(status_code=400, detail="지하철 도착 정보가 없습니다.")
 

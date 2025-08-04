@@ -6,7 +6,6 @@ from app.routes.interfaceData import router as interfaceData
 from app.routes.healthCheck import router as healthCheck
 from app.routes.publicApiData import router as publicApiData
 
-
 import os
 
 routers = [interfaceData, healthCheck,publicApiData]
