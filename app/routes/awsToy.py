@@ -56,7 +56,7 @@ async def validate_request(request: Request) -> Dict[str, Any]:
 @router.post("/api/doc/parse")
 async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     payload = ctx["payload"]
-    file_bytes = ctx["document"]
+    file_bytes = ctx["file_bytes"]
     headers = ctx["headers"]
 
     # endpointURL (없으면 기본값)
