@@ -67,12 +67,13 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     # 파일(멀티파트)
     files = {"document": ("upload.bin", file_bytes, mime_type)}
     data = {
-        "model": "document-parse-250618",
+        "model": "document-parse",
         "ocr": "auto",
+        "merge_multipage_tables": True,
         "chart_recognition": True,
         "coordinates": True,
-        "output_formats": '["html"]',
-        "base64_encoding": '["figure"]',
+        "output_formats": '["html", "markdown"]',
+        "base64_encoding": '["table"]',
     }
 
     response = requests.post(target_url, headers=headers, files=files, data=data)
