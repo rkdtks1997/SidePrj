@@ -76,9 +76,10 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
 #test
     print('headers:::',headers)
     # 파일(멀티파트)
-    files = {
-        "document": ("upload.bin", file_bytes, "application/octet-stream")
-    }
+    # files = {
+    #     "document": ("upload.bin", file_bytes, "application/octet-stream")
+    # }
+    files = {"document": file_bytes}
     # files = {"document": ("upload.bin", file_bytes, mime_type)}
     data = {
         "model": "document-parse",
