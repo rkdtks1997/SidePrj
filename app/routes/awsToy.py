@@ -31,10 +31,10 @@ async def validate_request(request: Request) -> Dict[str, Any]:
     print('request.body',request.body)
     print('request.json',request.json)
     # 1) payload try
-    try:
-        payload = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body.")
+    # try:
+    #     payload = await request.json()
+    # except Exception:
+    #     raise HTTPException(status_code=400, detail="Invalid JSON body.")
 
     # 2) document not in payload
     # if "document" not in payload:
@@ -54,7 +54,7 @@ async def validate_request(request: Request) -> Dict[str, Any]:
     }
 
     return {
-        "payload": payload,
+        # "payload": payload,
         "file_bytes": file_bytes,
         "headers": upstage_headers,
     }
@@ -62,17 +62,17 @@ async def validate_request(request: Request) -> Dict[str, Any]:
 # ===== /api/doc/parse =====
 @router.post("/api/doc/parse")
 async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
-    payload = ctx["payload"]
+    # payload = ctx["payload"]
     file_bytes = ctx["file_bytes"]
     headers = ctx["headers"]
 
-    print('payload:::',payload)
+    # print('payload:::',payload)
     print('file_bytes:::',file_bytes)
     print('headers:::',headers)
 
     # endpointURL (없으면 기본값)
-    target_url = payload.get("endpointURL", "https://api.upstage.ai/v1/document-digitization")
-    mime_type = payload.get("mime_type")
+    target_url = "https://api.upstage.ai/v1/document-digitization"
+    # mime_type = payload.get("mime_type")
 #test
     print('headers:::',headers)
     # 파일(멀티파트)
