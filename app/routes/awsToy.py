@@ -28,6 +28,8 @@ async def healthcheck():
 
 # ===== Validator (앞단 검증) =====
 async def validate_request(request: Request) -> Dict[str, Any]:
+    print('request.body',request.body)
+    print('request.json',request.json)
     # 1) payload try
     try:
         payload = await request.json()
