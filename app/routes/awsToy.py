@@ -35,12 +35,12 @@ async def validate_request(request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail="Invalid JSON body.")
 
     # 2) document not in payload
-    if "document" not in payload:
-        raise HTTPException(status_code=400, detail="'document' is required.")
+    # if "document" not in payload:
+    #     raise HTTPException(status_code=400, detail="'document' is required.")
 
     # 3) filebytes try (base64 decode)
     try:
-        file_bytes = payload["document"]
+        file_bytes = await request.body()
         # file_bytes = base64.b64decode(payload["document"], validate=True)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid base64 in 'document'.")
@@ -63,6 +63,10 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     payload = ctx["payload"]
     file_bytes = ctx["file_bytes"]
     headers = ctx["headers"]
+
+    print('payload:::',payload)
+    print('file_bytes:::',file_bytes)
+    print('headers:::',headers)
 
     # endpointURL (없으면 기본값)
     target_url = payload.get("endpointURL", "https://api.upstage.ai/v1/document-digitization")
