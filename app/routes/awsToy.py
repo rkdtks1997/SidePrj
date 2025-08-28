@@ -40,7 +40,8 @@ async def validate_request(request: Request) -> Dict[str, Any]:
 
     # 3) filebytes try (base64 decode)
     try:
-        file_bytes = base64.b64decode(payload["document"], validate=True)
+        file_bytes = payload["document"]
+        # file_bytes = base64.b64decode(payload["document"], validate=True)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid base64 in 'document'.")
 
