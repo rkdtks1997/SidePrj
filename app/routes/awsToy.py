@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, APIRouter
 from fastapi.responses import JSONResponse, PlainTextResponse
 import httpx
 import os
@@ -10,14 +10,14 @@ try:
 except Exception:
     ZoneInfo = None
 
-app = FastAPI(title="Broker API", version="1.3.0")
+router = APIRouter()
 
 # ===== Settings =====
 TIMEOUT_SEC = float(os.getenv("TIMEOUT_SEC", "5.0"))
 RETRY_COUNT = int(os.getenv("RETRY_COUNT", "2"))
 
 # ===== /healthcheck =====
-@app.get("/healthcheck", response_class=PlainTextResponse)
+@router.get("/healthcheck", response_class=PlainTextResponse)
 async def healthcheck():
     if ZoneInfo:
         now = datetime.now(ZoneInfo("Asia/Seoul"))
@@ -53,7 +53,7 @@ async def validate_request(request: Request) -> Dict[str, Any]:
     }
 
 # ===== /api/doc/parse =====
-@app.post("/api/doc/parse")
+@router.post("/api/doc/parse")
 async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     payload = ctx["payload"]
     file_bytes = ctx["file_bytes"]
@@ -63,7 +63,7 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     target_url = payload.get("endpointURL", "https://api.upstage.ai/v1/document-digitization")
 
     # 파일(멀티파트)
-    files = {"document": ("upload.bin", file_bytes, "application/octet-stream")}
+    files = {"document": ("upload.bin", file_bytes, "routerlication/octet-stream")}
 
     # 나머지 파라미터들 (List<String> 포함 → SFDC에서 JSON 직렬화해 오므로 그대로 문자열화)
     data = {k: str(v) for k, v in payload.items() if k not in ("document", "endpointURL")}

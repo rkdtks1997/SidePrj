@@ -5,11 +5,11 @@ from app.interseptor.ratelimiter import RateLimitMiddleware
 from app.routes.interfaceData import router as interfaceData
 from app.routes.healthCheck import router as healthCheck
 from app.routes.publicApiData import router as publicApiData
-from app.routes.aws_toy import router as aws_toy
+from app.routes.awsToy import router as awsToy
 
 import os
 
-routers = [interfaceData, healthCheck, publicApiData, aws_toy]
+routers = [interfaceData, healthCheck, publicApiData, awsToy]
 
 # FastAPI 앱 객체 생성
 app = FastAPI()
@@ -39,3 +39,12 @@ def root():
 # 라우터 등록
 for router in routers:
     app.include_router(router)
+
+
+def run():
+    print("서버 구동완료...")
+
+if __name__ == "__main__":
+    print("서버 구동중")
+    run()
+
