@@ -58,7 +58,7 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     payload = ctx["payload"]
     file_bytes = ctx["file_bytes"]
     headers = ctx["headers"]
-    mime_type = ctx["mime_type"]
+    mime_type = payload.get("mime_type")
 
     # endpointURL (없으면 기본값)
     target_url = payload.get("endpointURL", "https://api.upstage.ai/v1/document-digitization")
