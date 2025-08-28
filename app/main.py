@@ -5,10 +5,11 @@ from app.interseptor.ratelimiter import RateLimitMiddleware
 from app.routes.interfaceData import router as interfaceData
 from app.routes.healthCheck import router as healthCheck
 from app.routes.publicApiData import router as publicApiData
+from app.routes.aws_toy import router as aws_toy
 
 import os
 
-routers = [interfaceData, healthCheck,publicApiData]
+routers = [interfaceData, healthCheck, publicApiData, aws_toy]
 
 # FastAPI 앱 객체 생성
 app = FastAPI()
