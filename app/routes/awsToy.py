@@ -58,15 +58,16 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     payload = ctx["payload"]
     file_bytes = ctx["file_bytes"]
     headers = ctx["headers"]
+    mime_type = ctx["mime_type"]
 
     # endpointURL (없으면 기본값)
     target_url = payload.get("endpointURL", "https://api.upstage.ai/v1/document-digitization")
 
     # 파일(멀티파트)
-    files = {"document": ("upload.bin", file_bytes, "routerlication/octet-stream")}
+    files = {"document": ("upload.bin", file_bytes, mime_type)}
 
     # 나머지 파라미터들 (List<String> 포함 → SFDC에서 JSON 직렬화해 오므로 그대로 문자열화)
-    data = {k: str(v) for k, v in payload.items() if k not in ("document", "endpointURL")}
+    data = {k: str(v) for k, v in payload.items() if k not in ("document", "endpointURL", "mime_type")}
 
     # Upstage API 호출 (재시도)
     last_exc = None
