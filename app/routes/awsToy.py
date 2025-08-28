@@ -45,12 +45,15 @@ async def validate_request(request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail="Invalid base64 in 'document'.")
 
     # 헤더는 그대로 bypass
-    headers = dict(request.headers)
+    # headers = dict(request.headers)
+    upstage_headers = {
+        "Authorization": request.headers.get("authorization")
+    }
 
     return {
         "payload": payload,
         "file_bytes": file_bytes,
-        "headers": headers,
+        "headers": upstage_headers,
     }
 
 # ===== /api/doc/parse =====
