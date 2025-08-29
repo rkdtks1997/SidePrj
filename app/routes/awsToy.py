@@ -82,14 +82,14 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
 
     # endpointURL (없으면 기본값)
     target_url = "https://api.upstage.ai/v1/document-digitization"
-  
+    #test
     data = payload
     files = {"document": file_bytes}
 
     response = requests.post(target_url, headers=headers, files=files, data=data)
     
     print(response.json())
-    
+
     return response.json()
 
     # # 나머지 파라미터들 (List<String> 포함 → SFDC에서 JSON 직렬화해 오므로 그대로 문자열화)

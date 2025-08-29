@@ -4,3 +4,4 @@ requests
 pydantic
 uvicorn[standard]
 httpx
+flask
