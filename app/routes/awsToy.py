@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException, Depends, APIRouter
 from fastapi.responses import JSONResponse, PlainTextResponse
+from flask import Flask, request, jsonify
+import json
 import httpx
 import os
 import base64
@@ -26,35 +28,43 @@ async def healthcheck():
         now = datetime.now(timezone.utc)
     return f"AWS Response : {now.isoformat()}"
 
-# ===== Validator (앞단 검증) =====
+def _normalize_value(value: Any) -> Any:
+    """bool/string/list 등 타입 정규화"""
+
+    if isinstance(value, str):
+        lower = value.strip().lower()
+        if lower in ("true"):
+            return True
+        elif lower in ("false"):
+            return False
+        return value
+    return value
+
 async def validate_request(request: Request) -> Dict[str, Any]:
-    print('request.body',request.body)
-    print('request.json',request.json)
-    # 1) payload try
-    # try:
-    #     payload = await request.json()
-    # except Exception:
-    #     raise HTTPException(status_code=400, detail="Invalid JSON body.")
-
-    # 2) document not in payload
-    # if "document" not in payload:
-    #     raise HTTPException(status_code=400, detail="'document' is required.")
-
-    # 3) filebytes try (base64 decode)
     try:
         file_bytes = await request.body()
         # file_bytes = base64.b64decode(payload["document"], validate=True)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid base64 in 'document'.")
 
-    # 헤더는 그대로 bypass
-    # headers = dict(request.headers)
+    raw = request.headers.get("python_body")
+    if not raw:
+        raise HTTPException(status_code=400, detail="missing header: python_body")
+
+    try:
+        body = json.loads(raw)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="invalid json in header: python_body")
+
+    # ✅ 한 줄로 변환
+    payload = {key: _normalize_value(value) for key, value in body.items()}
+
     upstage_headers = {
         "Authorization": request.headers.get("authorization")
     }
 
     return {
-        # "payload": payload,
+        "payload": payload,
         "file_bytes": file_bytes,
         "headers": upstage_headers,
     }
@@ -62,42 +72,28 @@ async def validate_request(request: Request) -> Dict[str, Any]:
 # ===== /api/doc/parse =====
 @router.post("/api/doc/parse")
 async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
-    # payload = ctx["payload"]
+    payload = ctx["payload"]
     file_bytes = ctx["file_bytes"]
     headers = ctx["headers"]
 
-    # print('payload:::',payload)
+    print('payload:::',payload)
     print('file_bytes:::',file_bytes)
     print('headers:::',headers)
 
     # endpointURL (없으면 기본값)
     target_url = "https://api.upstage.ai/v1/document-digitization"
-    # mime_type = payload.get("mime_type")
-#test
-    print('headers:::',headers)
-    # 파일(멀티파트)
-    # files = {
-    #     "document": ("upload.bin", file_bytes, "application/octet-stream")
-    # }
+  
+    data = payload
     files = {"document": file_bytes}
-    # files = {"document": ("upload.bin", file_bytes, mime_type)}
-    data = {
-        "model": "document-parse",
-        "ocr": "auto",
-        "merge_multipage_tables": True,
-        "chart_recognition": True,
-        "coordinates": True,
-        "output_formats": '["html", "markdown"]',
-        "base64_encoding": '["table"]',
-    }
 
     response = requests.post(target_url, headers=headers, files=files, data=data)
     
     print(response.json())
+    
     return response.json()
 
     # # 나머지 파라미터들 (List<String> 포함 → SFDC에서 JSON 직렬화해 오므로 그대로 문자열화)
-    # data = {k: str(v) for k, v in payload.items() if k not in ("document", "endpointURL", "mime_type")}
+    # data = {key: str(value) for key, value in payload.items() if key not in ("document", "endpointURL", "mime_type")}
 
     # # Upstage API 호출 (재시도)
     # last_exc = None
@@ -131,4 +127,4 @@ def _try_json(content: bytes):
 
 def _filter_response_headers(h: httpx.Headers) -> dict:
     drop = {"transfer-encoding", "content-encoding", "connection"}
-    return {k: v for k, v in h.items() if k.lower() not in drop}
+    return {key: value for key, value in h.items() if key.lower() not in drop}
