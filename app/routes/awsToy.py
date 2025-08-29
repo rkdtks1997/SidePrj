@@ -28,17 +28,40 @@ async def healthcheck():
         now = datetime.now(timezone.utc)
     return f"AWS Response : {now.isoformat()}"
 
-def _normalize_value(value: Any) -> Any:
-    """bool/string/list 등 타입 정규화"""
+import json
+from typing import Any
 
+def _normalize_value(value: Any) -> Any:
+    # 기존 정규화 로직 (필요 시 유지)
     if isinstance(value, str):
         lower = value.strip().lower()
-        if lower in ("true"):
+        if lower == "true":
             return True
-        elif lower in ("false"):
+        elif lower == "false":
             return False
+        if (value.strip().startswith("[") and value.strip().endswith("]")) \
+           or (value.strip().startswith("{") and value.strip().endswith("}")):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                return value
         return value
     return value
+
+def prepare_payload_for_headers(payload: Dict[str, Any]) -> Dict[str, str]:
+    """
+    - list/dict 값은 JSON 문자열로 변환
+    - bool 값은 'true'/'false' 문자열 변환
+    - 그 외 값은 str() 변환
+    """
+    def to_header_value(v: Any) -> str:
+        if isinstance(v, bool):
+            return "true" if v else "false"
+        if isinstance(v, (list, dict)):
+            return json.dumps(v, ensure_ascii=False)
+        return str(v)
+
+    return {k: to_header_value(v) for k, v in payload.items()}
 
 async def validate_request(request: Request) -> Dict[str, Any]:
     try:
@@ -46,6 +69,7 @@ async def validate_request(request: Request) -> Dict[str, Any]:
         # file_bytes = base64.b64decode(payload["document"], validate=True)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid base64 in 'document'.")
+
 
     raw = request.headers.get("python_body")
     if not raw:
@@ -58,6 +82,7 @@ async def validate_request(request: Request) -> Dict[str, Any]:
 
     # ✅ 한 줄로 변환
     payload = {key: _normalize_value(value) for key, value in body.items()}
+    payload = prepare_payload_for_headers(payload)
 
     upstage_headers = {
         "Authorization": request.headers.get("authorization")
