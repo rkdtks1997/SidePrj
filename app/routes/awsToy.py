@@ -15,10 +15,13 @@ router = APIRouter()
 
 TIMEOUT_SEC = float(os.getenv("TIMEOUT_SEC", "5.0"))
 
+
+# -------------------------
+# Text normalize utils
+# -------------------------
 TOKEN_SPLIT_REGEX = re.compile(r"[_\-\s]+")
 CAMEL_CASE_REGEX = re.compile(r"(?<!^)(?=[A-Z])")
 TRAILING_SF_ID_REGEX = re.compile(r"__c$|__r$|__pc$|__pr$", re.IGNORECASE)
-
 
 @router.get("/healthcheck", response_class=PlainTextResponse)
 async def healthcheck():
@@ -92,157 +95,101 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     response = requests.post(target_url, headers=headers, files=files, data=payload)
     return response.json()
 
-# similarity_router.py
-from typing import Any, Dict, List, Tuple
-import re
-import difflib
-import sqlite3
-
-from fastapi import APIRouter, Request, HTTPException
-
-router = APIRouter()
-
-# -------------------------
-# Text normalize utils
-# -------------------------
-TOKEN_SPLIT_REGEX = re.compile(r"[_\-\s]+")
-CAMEL_CASE_REGEX = re.compile(r"(?<!^)(?=[A-Z])")
-TRAILING_SF_ID_REGEX = re.compile(r"__c$|__r$|__pc$|__pr$", re.IGNORECASE)
-
-def normalize_identifier(s: str) -> str:
-    if not s:
-        return ""
-    s = TRAILING_SF_ID_REGEX.sub("", s)
-    s = CAMEL_CASE_REGEX.sub(" ", s)      # camelCase -> camel Case
-    s = TOKEN_SPLIT_REGEX.sub(" ", s)     # snake/kebab -> space
-    return re.sub(r"\s+", " ", s).strip().lower()
+# 정확도 검사
+# --- 카탈로그: Object → Field → {ID: Value} ---
+def mock_product_options() -> Dict[str, Dict[str, Dict[str, str]]]:
+    return {
+        "시책": {
+            "Promotion2": {
+                "P2-CFX-5Y-PT5Y-75MK-OIL2Y": "CFX 5yrs( 동력전달계통5년75만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-4Y-PT4Y-60MK-OIL2Y": "CFX 4yrs( 동력전달계통4년60만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-4Y-PT5Y-60MK-OIL2Y": "CFX 4yrs( 동력전달계통5년60만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-4Y-PT4Y-70MK-OIL2Y": "CFX 4yrs( 동력전달계통4년70만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-4Y-PT4Y-80MK-OIL2Y": "CFX 4yrs( 동력전달계통4년80만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-4Y-PT3Y-60MK-OIL1Y": "CFX 4yrs( 동력전달계통3년60만km 보증, 엔진오일및필터1년)",
+                "P2-CFX-5Y-PT4Y-75MK-OIL2Y": "CFX 5yrs( 동력전달계통4년75만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-5Y-PT5Y-90MK-OIL2Y": "CFX 5yrs( 동력전달계통5년90만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-5Y-PT5Y-100MK-OIL3Y": "CFX 5yrs( 동력전달계통5년100만km 보증, 엔진오일및필터3년)",
+                "P2-CFX-5Y-PT6Y-80MK-OIL2Y": "CFX 5yrs( 동력전달계통6년80만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-6Y-PT5Y-100MK-OIL3Y": "CFX 6yrs( 동력전달계통5년100만km 보증, 엔진오일및필터3년)",
+                "P2-CFX-6Y-PT6Y-100MK-OIL2Y": "CFX 6yrs( 동력전달계통6년100만km 보증, 엔진오일및필터2년)",
+                "P2-CFX-6Y-PT5Y-120MK-OIL4Y": "CFX 6yrs( 동력전달계통5년120만km 보증, 엔진오일및필터4년)",
+                "P2-CFX-7Y-PT5Y-120MK-OIL3Y": "CFX 7yrs( 동력전달계통5년120만km 보증, 엔진오일및필터3년)",
+                "P2-CFX-7Y-PT6Y-150MK-OIL3Y": "CFX 7yrs( 동력전달계통6년150만km 보증, 엔진오일및필터3년)",
+                "P2-CFX-3Y-PT3Y-50MK-OIL1Y": "CFX 3yrs( 동력전달계통3년50만km 보증, 엔진오일및필터1년)",
+            }
+        }
+    }
 
 def dl_ratio(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio()  # 0~1
 
-# -------------------------
-# DB layer (SQLite 예시)
-# -------------------------
-DB_PATH = "similarity.db"
-# 스키마 예시:
-# CREATE TABLE IF NOT EXISTS object_fields (
-#   id INTEGER PRIMARY KEY,
-#   object_name TEXT NOT NULL,
-#   field_name  TEXT NOT NULL
-# );
-# CREATE INDEX IF NOT EXISTS idx_obj ON object_fields(object_name);
+# --- 값 정규화 & 유사도 ---
+def normalize_value_text(s: str) -> str:
+    if not s:
+        return ""
+    return re.sub(r"\s+", " ", s).strip().lower()
 
-def object_exists(object_name: str) -> bool:
-    with sqlite3.connect(DB_PATH) as con:
-        cur = con.cursor()
-        cur.execute("SELECT 1 FROM object_fields WHERE object_name=? LIMIT 1", (object_name,))
-        return cur.fetchone() is not None
-
-def fetch_object_fields(object_name: str) -> List[str]:
-    with sqlite3.connect(DB_PATH) as con:
-        cur = con.cursor()
-        cur.execute("SELECT field_name FROM object_fields WHERE object_name=?", (object_name,))
-        return [r[0] for r in cur.fetchall()]
-
-# -------------------------
-# API endpoint
-# -------------------------
+# --- 단일 return 버전 ---
 @router.post("/api/similarity")
-async def doc_similarity(request: Request):
+def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Apex 예시 바디:
-    {
-      "objectName": "Account",
-      "fieldName":  "Name",
-      "top_k": 5,            # optional
-      "threshold": 0.25      # optional (0~1)
-    }
+    - objectName/fieldName은 '정확 키'로만 접근
+    - ctx[objectName][fieldName]의 사용자 '값'을 추출
+    - 카탈로그 해당 필드의 값들과 유사도 비교
+    - 유사도 ≥ 0.8(기본) 중 최상 1건만 bestMatch로 반환
+    - 어떤 경우든 return은 마지막 한 번만
     """
-    # 1) 요청 파싱
-    try:
-        ctx: Dict[str, Any] = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
-
+    # 기본 응답 뼈대
     object_name = ctx.get("objectName")
     field_name  = ctx.get("fieldName")
-    top_k       = int(ctx.get("top_k", 5))
-    threshold   = float(ctx.get("threshold", 0.0))  # 0~1
+    threshold   = ctx.get("threshold")  # 기본 80%
 
-    if not object_name or not field_name:
-        raise HTTPException(status_code=400, detail="objectName and fieldName are required")
-
-    # 2) 오브젝트 유효성
-    if not object_exists(object_name):
-        # 확실: DB에 오브젝트 없음
-        return {
-            "success": False,
-            "objectName": object_name,
-            "fieldName": field_name,
-            "objectValid": False,
-            "fieldValid": False,
-            "message": f"Object '{object_name}' not found in DB."
-        }
-
-    # 3) 필드 목록 조회
-    db_fields = fetch_object_fields(object_name)
-    if not db_fields:
-        # 확실: 해당 오브젝트의 필드 레코드 없음
-        return {
-            "success": False,
-            "objectName": object_name,
-            "fieldName": field_name,
-            "objectValid": True,
-            "fieldValid": False,
-            "message": f"No fields found for object '{object_name}'."
-        }
-
-    # 4) 완전일치 판단
-    if field_name in db_fields:
-        # 확실: 필드 존재 → 즉시 OK
-        return {
-            "success": True,
-            "objectName": object_name,
-            "fieldName": field_name,
-            "objectValid": True,
-            "fieldValid": True,
-            "score": 1.0,
-            "bestMatch": field_name,
-            "candidates": [{"field": field_name, "score": 1.0}]
-        }
-
-    # 5) 유사도 후보(difflib)
-    src = normalize_identifier(field_name)
-
-    best_field: str = None
-    best_score: float = -1.0
-
-    for f in db_fields:
-        s = dl_ratio(src, normalize_identifier(f))
-        if s > best_score:
-            best_field, best_score = f, s
-
-    # threshold 적용: 최상 후보가 하한선 미달이면 매칭 없음으로 처리
-    if best_field is None or best_score < float(threshold):
-        return {
-            "success": True,
-            "objectName": object_name,
-            "fieldName": field_name,
-            "objectValid": True,
-            "fieldValid": False,              # 완전일치 아님
-            "bestMatch": None,                # 유의미한 후보 없음
-            "message": f"No similar field meets threshold {threshold}"
-        }
-
-    # 단일 최고 유사도만 반환
-    return {
-        "success": True,
+    res: Dict[str, Any] = {
+        "success": False,
         "objectName": object_name,
         "fieldName": field_name,
-        "objectValid": True,
-        "fieldValid": False,                  # 완전일치 아님
-        "bestMatch": {
-            "field": best_field,
-            "score": float(best_score)
-        }
+        "objectValid": False,
+        "fieldValid": False,
+        "sourceValue": None,
+        "bestMatch": None,
+        "message": None,
     }
+
+    catalog = mock_product_options()
+
+    # 1) object/field 존재 확인 (정확 키)
+    obj_block = catalog.get(object_name)
+    field_map = obj_block.get(field_name)
+
+    # 2) 요청에서 사용자 '값' 추출
+    user_obj_section = ctx.get(object_name)
+    if not isinstance(user_obj_section, dict):
+        res["message"] = f"Request body does not contain source value at ctx['{object_name}'][*]."
+        return res
+
+    user_value = user_obj_section.get(field_name)
+    if not isinstance(user_value, str):
+        res["message"] = f"Request body does not contain a string value at ctx['{object_name}']['{field_name}']."
+        return res
+
+    res["sourceValue"] = user_value
+
+    # 3) 값 유사도 비교(최고 1건, 임계 0.8)
+    src = normalize_value_text(user_value)
+    best_id, best_val, best_score = None, None, -1.0
+    print("field_map:", field_map)
+
+    for id_, val in field_map.items():
+        s = dl_ratio(src, normalize_value_text(val))
+        if s > best_score:
+            best_id, best_val, best_score = id_, val, s
+
+    if best_id is not None and best_score >= threshold:
+        res["success"] = True
+        res["bestMatch"] = {"id": best_id, "value": best_val, "score": float(best_score)}
+    else:
+        res["message"] = f"No value meets threshold {threshold}"
+
+    print("res:", res)
+    return res
