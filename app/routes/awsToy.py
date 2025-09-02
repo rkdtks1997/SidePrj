@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, Body
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.routing import APIRouter, Request, HTTPException
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 from datetime import datetime, timezone
 
 import re
@@ -96,48 +96,60 @@ async def doc_parse(ctx: Dict[str, Any] = Depends(validate_request)):
     return response.json()
 
 # 정확도 검사
-# --- 카탈로그: Object → Field → {ID: Value} ---
-def mock_product_options() -> Dict[str, Dict[str, Dict[str, str]]]:
-    return {
-        "시책": {
-            "Promotion2": {
-                "P2-CFX-5Y-PT5Y-75MK-OIL2Y": "CFX 5yrs( 동력전달계통5년75만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-4Y-PT4Y-60MK-OIL2Y": "CFX 4yrs( 동력전달계통4년60만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-4Y-PT5Y-60MK-OIL2Y": "CFX 4yrs( 동력전달계통5년60만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-4Y-PT4Y-70MK-OIL2Y": "CFX 4yrs( 동력전달계통4년70만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-4Y-PT4Y-80MK-OIL2Y": "CFX 4yrs( 동력전달계통4년80만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-4Y-PT3Y-60MK-OIL1Y": "CFX 4yrs( 동력전달계통3년60만km 보증, 엔진오일및필터1년)",
-                "P2-CFX-5Y-PT4Y-75MK-OIL2Y": "CFX 5yrs( 동력전달계통4년75만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-5Y-PT5Y-90MK-OIL2Y": "CFX 5yrs( 동력전달계통5년90만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-5Y-PT5Y-100MK-OIL3Y": "CFX 5yrs( 동력전달계통5년100만km 보증, 엔진오일및필터3년)",
-                "P2-CFX-5Y-PT6Y-80MK-OIL2Y": "CFX 5yrs( 동력전달계통6년80만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-6Y-PT5Y-100MK-OIL3Y": "CFX 6yrs( 동력전달계통5년100만km 보증, 엔진오일및필터3년)",
-                "P2-CFX-6Y-PT6Y-100MK-OIL2Y": "CFX 6yrs( 동력전달계통6년100만km 보증, 엔진오일및필터2년)",
-                "P2-CFX-6Y-PT5Y-120MK-OIL4Y": "CFX 6yrs( 동력전달계통5년120만km 보증, 엔진오일및필터4년)",
-                "P2-CFX-7Y-PT5Y-120MK-OIL3Y": "CFX 7yrs( 동력전달계통5년120만km 보증, 엔진오일및필터3년)",
-                "P2-CFX-7Y-PT6Y-150MK-OIL3Y": "CFX 7yrs( 동력전달계통6년150만km 보증, 엔진오일및필터3년)",
-                "P2-CFX-3Y-PT3Y-50MK-OIL1Y": "CFX 3yrs( 동력전달계통3년50만km 보증, 엔진오일및필터1년)",
-            }
-        }
-    }
-
 def dl_ratio(a: str, b: str) -> float:
-    return difflib.SequenceMatcher(None, a, b).ratio()  # 0~1
+    return difflib.SequenceMatcher(None, a, b).ratio()
 
-# --- 값 정규화 & 유사도 ---
 def normalize_value_text(s: str) -> str:
     if not s:
         return ""
     return re.sub(r"\s+", " ", s).strip().lower()
 
-# --- 단일 return 버전 ---
-@router.post("/api/similarity")
-def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, Any]:
+def to_str(v: Any) -> str:
+    return v if isinstance(v, str) else ("" if v is None else str(v))
 
-    # 기본 응답 뼈대
-    object_name = ctx.get("objectName")
-    field_name  = ctx.get("fieldName")
-    threshold   = 0.8  # 기본 80%
+def to_float(v: Any, default: float) -> float:
+    try:
+        return float(v) if not isinstance(v, str) else float(v.strip())
+    except Exception:
+        return default
+
+def mock_product_options() -> Dict[str, Dict[str, Dict[str, str]]]:
+    return {
+        "시책": {
+            "Promotion2": {
+                "P2-CFX-5Y-PT5Y-75MK-OIL2Y": "CFX 5yrs( 동력전달계통5년75만km 보증, 엔진오일및필터2년)",
+                # ... 생략 ...
+            }
+        }
+    }
+
+@router.post("/api/similarity")
+async def match_value_by_similarity_single_return(
+    ctx: Union[Dict[str, Any], str] = Body(...),   # ✅ dict 또는 string 모두 허용
+) -> Dict[str, Any]:
+    # 0) payload 정규화: dict로 맞춘다
+    if isinstance(ctx, str):
+        # 바디가 JSON 문자열이면 1회 더 파싱
+        try:
+            payload = json.loads(ctx)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=422, detail="Body is a JSON string but not a valid JSON object")
+    elif isinstance(ctx, dict):
+        # {"body":"<json>"} 래핑도 지원
+        if "body" in ctx and isinstance(ctx["body"], str):
+            try:
+                payload = json.loads(ctx["body"])
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=422, detail="Invalid JSON in 'body' field")
+        else:
+            payload = ctx
+    else:
+        raise HTTPException(status_code=422, detail="Body must be an object or a JSON string")
+
+    # 입력 파싱
+    object_name = to_str(payload.get("objectName")).strip()
+    field_name  = to_str(payload.get("fieldName")).strip()
+    threshold   = to_float(payload.get("threshold", 0.8), 0.8)
 
     res: Dict[str, Any] = {
         "success": False,
@@ -148,30 +160,30 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
         "message": None,
     }
 
+    # catalog 접근
     catalog = mock_product_options()
-
-    # 1) object/field 존재 확인 (정확 키)
     obj_block = catalog.get(object_name)
-    field_map = obj_block.get(field_name)
+    field_map = obj_block.get(field_name) if isinstance(obj_block, dict) else None
+    if (obj_block is None) or (field_map is None):
+        res["message"] = "Invalid objectName or fieldName."
+        return res
 
-    # 2) 요청에서 사용자 '값' 추출
-    user_obj_section = ctx.get(object_name)
+    # 요청 본문에서 사용자 값 꺼내기: payload[objectName][fieldName]에 문자열
+    user_obj_section = payload.get(object_name)
     if not isinstance(user_obj_section, dict):
-        res["message"] = f"Request body does not contain source value at ctx['{object_name}'][*]."
+        res["message"] = f"Request body does not contain source value at payload['{object_name}'][*]."
         return res
 
     user_value = user_obj_section.get(field_name)
     if not isinstance(user_value, str):
-        res["message"] = f"Request body does not contain a string value at ctx['{object_name}']['{field_name}']."
+        res["message"] = f"Request body does not contain a string value at payload['{object_name}']['{field_name}']."
         return res
 
     res["sourceValue"] = user_value
 
-    # 3) 값 유사도 비교(최고 1건, 임계 0.8)
+    # 유사도 최상 1건
     src = normalize_value_text(user_value)
     best_id, best_val, best_score = None, None, -1.0
-    print("field_map:", field_map)
-
     for id_, val in field_map.items():
         s = dl_ratio(src, normalize_value_text(val))
         if s > best_score:
@@ -183,5 +195,4 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
     else:
         res["message"] = f"No value meets threshold {threshold}"
 
-    print("res:", res)
     return res
