@@ -137,7 +137,7 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
     - objectName/fieldName은 '정확 키'로만 접근
     - ctx[objectName][fieldName]의 사용자 '값'을 추출
     - 카탈로그 해당 필드의 값들과 유사도 비교
-    - 유사도 ≥ 0.8(기본) 중 최상 1건만 bestMatch로 반환
+    - 유사도 ≥ 0.8(기본) 중 최상 1건만 id로 반환
     - 어떤 경우든 return은 마지막 한 번만
     """
     # 기본 응답 뼈대
@@ -149,10 +149,8 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
         "success": False,
         "objectName": object_name,
         "fieldName": field_name,
-        "objectValid": False,
-        "fieldValid": False,
         "sourceValue": None,
-        "bestMatch": None,
+        "id": None,
         "message": None,
     }
 
@@ -187,7 +185,7 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
 
     if best_id is not None and best_score >= threshold:
         res["success"] = True
-        res["bestMatch"] = {"id": best_id, "value": best_val, "score": float(best_score)}
+        res["id"] = {"id": best_id, "value": best_val, "score": float(best_score)}
     else:
         res["message"] = f"No value meets threshold {threshold}"
 
