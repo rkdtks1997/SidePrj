@@ -135,6 +135,7 @@ def normalize_value_text(s: str) -> str:
 def match_value_by_similarity_single_return(
     ctx: Dict[str, Any] = Body(...),   # ✅ JSON Body로 받기
 ) -> Dict[str, Any]:
+    print("Request Body:", ctx)
     # 안전 변환 유틸
     def to_str(v: Any) -> str:
         return v if isinstance(v, str) else ("" if v is None else str(v))
