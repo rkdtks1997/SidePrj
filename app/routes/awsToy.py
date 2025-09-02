@@ -130,28 +130,63 @@ def normalize_value_text(s: str) -> str:
         return ""
     return re.sub(r"\s+", " ", s).strip().lower()
 
-# --- 단일 return 버전 ---
-@router.post("/api/similarity")
-def match_value_by_similarity_single_return(
-    ctx: Dict[str, Any] = Body(...),   # ✅ JSON Body로 받기
-) -> Dict[str, Any]:
-    print("Request Body:", ctx)
-    # 안전 변환 유틸
-    def to_str(v: Any) -> str:
-        return v if isinstance(v, str) else ("" if v is None else str(v))
+# ---- 어떤 포맷으로 와도 payload를 뽑아내는 추출기 ----
+async def extract_payload(request: Request) -> Dict[str, Any]:
+    ctype = request.headers.get("content-type", "").lower()
 
-    def to_float(v: Any, default: float) -> float:
+    # 1) 순수 JSON 본문
+    if "application/json" in ctype:
         try:
-            return float(v) if not isinstance(v, str) else float(v.strip())
+            return await request.json()
         except Exception:
-            return default
+            raise HTTPException(status_code=422, detail="Invalid JSON body")
 
-    # 입력 파싱
-    object_name = to_str(ctx.get("objectName")).strip()
-    field_name  = to_str(ctx.get("fieldName")).strip()
-    threshold   = to_float(ctx.get("threshold", 0.8), 0.8)  # ✅ 기본 0.8, 문자열도 허용
+    # 2) form-data 또는 x-www-form-urlencoded
+    if "multipart/form-data" in ctype or "application/x-www-form-urlencoded" in ctype:
+        form = await request.form()
+        # (1) body 필드가 문자열 JSON일 수 있음
+        if "body" in form:
+            body_val = form["body"]
+            if isinstance(body_val, (bytes, bytearray)):
+                body_val = body_val.decode("utf-8", errors="ignore")
+            try:
+                return json.loads(body_val)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=422, detail="Invalid JSON in form field 'body'")
+        # (2) 그렇지 않으면 form을 dict로 반환 (필요시 확장)
+        return dict(form)
 
-    res: Dict[str, Any] = {
+    # 3) 헤더에 body가 담긴 경우 (예: 'body' 또는 'python-body')
+    for hdr in ("body", "python-body"):
+        raw = request.headers.get(hdr)
+        if raw:
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=422, detail=f"Invalid JSON in header '{hdr}'")
+
+    # 4) 마지막으로 raw 바이트를 JSON으로 시도
+    raw_bytes = await request.body()
+    if raw_bytes:
+        try:
+            return json.loads(raw_bytes.decode("utf-8", errors="ignore"))
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=422, detail="Invalid raw body (not JSON)")
+
+    raise HTTPException(status_code=422, detail="No payload found")
+
+# ---- 엔드포인트 ----
+@router.post("/api/similarity")
+async def match_value_by_similarity_single_return(request: Request) -> Dict[str, Any]:
+    # 어떤 방식이든 payload를 추출
+    payload: Dict[str, Any] = await extract_payload(request)
+
+    # 파라미터 파싱
+    object_name = payload.get("objectName")
+    field_name  = payload.get("fieldName")
+    threshold   = payload.get("threshold", 0.8), 0.8  # 기본 0.8
+
+    res: Dict[str, Any] = { 
         "success": False,
         "objectName": object_name,
         "fieldName": field_name,
@@ -160,29 +195,28 @@ def match_value_by_similarity_single_return(
         "message": None,
     }
 
+    # object/field 존재 체크
     catalog = mock_product_options()
-
-    # 1) object/field 존재 확인: 하나라도 없으면 고정 메시지로 반환
     obj_block = catalog.get(object_name)
     field_map = obj_block.get(field_name) if isinstance(obj_block, dict) else None
     if (obj_block is None) or (field_map is None):
         res["message"] = "Invalid objectName or fieldName."
         return res
 
-    # 2) 요청에서 사용자 '값' 추출 (ctx[objectName][fieldName] 위치의 문자열 값)
-    user_obj_section = ctx.get(object_name)
+    # 요청 본문에서 사용자 값 추출: payload[objectName][fieldName] (문자열이어야 함)
+    user_obj_section = payload.get(object_name)
     if not isinstance(user_obj_section, dict):
-        res["message"] = f"Request body does not contain source value at ctx['{object_name}'][*]."
+        res["message"] = f"Request body does not contain source value at payload['{object_name}'][*]."
         return res
 
     user_value = user_obj_section.get(field_name)
     if not isinstance(user_value, str):
-        res["message"] = f"Request body does not contain a string value at ctx['{object_name}']['{field_name}']."
+        res["message"] = f"Request body does not contain a string value at payload['{object_name}']['{field_name}']."
         return res
 
     res["sourceValue"] = user_value
 
-    # 3) 값 유사도 비교 (difflib) – 최상 1건만, threshold 이상만 성공
+    # 유사도 최상 1건만
     src = normalize_value_text(user_value)
     best_id, best_val, best_score = None, None, -1.0
     for id_, val in field_map.items():
