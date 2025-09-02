@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, Body
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.routing import APIRouter, Request, HTTPException
 from typing import Any, Dict, List, Tuple
@@ -132,18 +132,23 @@ def normalize_value_text(s: str) -> str:
 
 # --- 단일 return 버전 ---
 @router.post("/api/similarity")
-def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    - objectName/fieldName은 '정확 키'로만 접근
-    - ctx[objectName][fieldName]의 사용자 '값'을 추출
-    - 카탈로그 해당 필드의 값들과 유사도 비교
-    - 유사도 ≥ 0.8(기본) 중 최상 1건만 id로 반환
-    - 어떤 경우든 return은 마지막 한 번만
-    """
-    # 기본 응답 뼈대
-    object_name = ctx.get("objectName")
-    field_name  = ctx.get("fieldName")
-    threshold   = ctx.get("threshold")  # 기본 80%
+def match_value_by_similarity_single_return(
+    ctx: Dict[str, Any] = Body(...),   # ✅ JSON Body로 받기
+) -> Dict[str, Any]:
+    # 안전 변환 유틸
+    def to_str(v: Any) -> str:
+        return v if isinstance(v, str) else ("" if v is None else str(v))
+
+    def to_float(v: Any, default: float) -> float:
+        try:
+            return float(v) if not isinstance(v, str) else float(v.strip())
+        except Exception:
+            return default
+
+    # 입력 파싱
+    object_name = to_str(ctx.get("objectName")).strip()
+    field_name  = to_str(ctx.get("fieldName")).strip()
+    threshold   = to_float(ctx.get("threshold", 0.8), 0.8)  # ✅ 기본 0.8, 문자열도 허용
 
     res: Dict[str, Any] = {
         "success": False,
@@ -156,11 +161,14 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
 
     catalog = mock_product_options()
 
-    # 1) object/field 존재 확인 (정확 키)
+    # 1) object/field 존재 확인: 하나라도 없으면 고정 메시지로 반환
     obj_block = catalog.get(object_name)
-    field_map = obj_block.get(field_name)
+    field_map = obj_block.get(field_name) if isinstance(obj_block, dict) else None
+    if (obj_block is None) or (field_map is None):
+        res["message"] = "Invalid objectName or fieldName."
+        return res
 
-    # 2) 요청에서 사용자 '값' 추출
+    # 2) 요청에서 사용자 '값' 추출 (ctx[objectName][fieldName] 위치의 문자열 값)
     user_obj_section = ctx.get(object_name)
     if not isinstance(user_obj_section, dict):
         res["message"] = f"Request body does not contain source value at ctx['{object_name}'][*]."
@@ -173,11 +181,9 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
 
     res["sourceValue"] = user_value
 
-    # 3) 값 유사도 비교(최고 1건, 임계 0.8)
+    # 3) 값 유사도 비교 (difflib) – 최상 1건만, threshold 이상만 성공
     src = normalize_value_text(user_value)
     best_id, best_val, best_score = None, None, -1.0
-    print("field_map:", field_map)
-
     for id_, val in field_map.items():
         s = dl_ratio(src, normalize_value_text(val))
         if s > best_score:
@@ -189,5 +195,4 @@ def match_value_by_similarity_single_return(ctx: Dict[str, Any]) -> Dict[str, An
     else:
         res["message"] = f"No value meets threshold {threshold}"
 
-    print("res:", res)
     return res
